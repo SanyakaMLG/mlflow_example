@@ -1,4 +1,5 @@
 import os
+import mlflow
 import numpy as np
 import pandas as pd
 from datasets import load_dataset
@@ -26,6 +27,8 @@ def process_data():
     X, y = df[columns], df[target_column]
     logger.info(f'    Используемые фичи: {columns}')
 
+    mlflow.log_param("features", columns)
+
     all_cat_features = [
         'workclass', 'education', 'marital.status', 'occupation', 'relationship',
         'race', 'sex', 'native.country',
@@ -41,7 +44,13 @@ def process_data():
     )
 
     # use train_size param to take only train_size rows of train dataset
-    ...
+    train_size = params.get('train_size')
+    if train_size is not None and train_size < len(X_train):
+        X_train = X_train[:train_size]
+        y_train = y_train[:train_size]
+
+    mlflow.log_param("train_size", len(X_train))
+    
     logger.info(f'    Размер тренировочного датасета: {len(y_train)}')
     logger.info(f'    Размер тестового датасета: {len(y_test)}')
 
