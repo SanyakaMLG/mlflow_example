@@ -54,16 +54,20 @@ def process_data():
     logger.info(f'    Размер тренировочного датасета: {len(y_train)}')
     logger.info(f'    Размер тестового датасета: {len(y_test)}')
 
-    logger.info('Начали сохранять датасеты')
+    logger.info('Начали сохранять датасеты локально и в MLflow')
     os.makedirs(os.path.dirname(DATASET_PATH_PATTERN), exist_ok=True)
+    
     for split, split_name in zip(
         (X_train, X_test, y_train, y_test),
         ('X_train', 'X_test', 'y_train', 'y_test'),
     ):
-        pd.DataFrame(split).to_csv(
-            DATASET_PATH_PATTERN.format(split_name=split_name), index=False
-        )
-    logger.info('Успешно сохранили датасеты!')
+        file_path = DATASET_PATH_PATTERN.format(split_name=split_name)
+        
+        pd.DataFrame(split).to_csv(file_path, index=False)
+        
+        mlflow.log_artifact(file_path, artifact_path="datasets")
+        
+    logger.info('Успешно сохранили датасеты и залогировали артефакты!')
 
 
 if __name__ == '__main__':
