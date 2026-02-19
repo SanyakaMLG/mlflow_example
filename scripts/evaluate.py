@@ -1,11 +1,17 @@
 import os
+import mlflow
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from joblib import load
-from sklearn.metrics import get_scorer
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score,
+    roc_auc_score, average_precision_score, classification_report,
+    confusion_matrix, ConfusionMatrixDisplay
+)
 
-from constants import DATASET_PATH_PATTERN, MODEL_FILEPATH
+from constants import DATASET_PATH_PATTERN, MODEL_FILEPATH, REPORT_PATH, CM_PATH
 from utils import get_logger, load_params
 
 STAGE_NAME = 'evaluate'
@@ -29,17 +35,39 @@ def evaluate():
         )
     model = load(MODEL_FILEPATH)
 
-    # logger.info('Скорим модель на тесте')
-    # y_proba = model.predict_proba(X_test)[:, 1]
-    # y_pred = np.where(y_proba >= 0.5, 1, 0)
+    logger.info('Скорим модель на тесте')
+    y_pred = model.predict(X_test)
+
+    if hasattr(model, "predict_proba"):
+        y_proba = model.predict_proba(X_test)[:, 1]
+    else:
+        y_proba = y_pred
 
     logger.info('Начали считать метрики на тесте')
-    metrics = {}
-    for metric_name in params['metrics']:
-        scorer = get_scorer(metric_name)
-        score = scorer(model, X_test, y_test)
-        metrics[metric_name] = score
+    metrics = {
+        "accuracy": accuracy_score(y_test, y_pred),
+        "precision": precision_score(y_test, y_pred),
+        "recall": recall_score(y_test, y_pred),
+        "f1_score": f1_score(y_test, y_pred),
+        "roc_auc": roc_auc_score(y_test, y_proba),
+        "pr_auc": average_precision_score(y_test, y_proba)
+    }
+
+    mlflow.log_metrics(metrics)
     logger.info(f'Значения метрик - {metrics}')
+
+    logger.info('Генерация артефактов')
+    report = classification_report(y_test, y_pred)
+    with open(REPORT_PATH, "w") as f:
+        f.write(report)
+    mlflow.log_artifact(REPORT_PATH)
+
+    cm = confusion_matrix(y_test, y_pred)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    fig, ax = plt.subplots()
+    disp.plot(ax=ax)
+    fig.savefig(CM_PATH)
+    mlflow.log_artifact(CM_PATH)
 
 
 if __name__ == '__main__':
