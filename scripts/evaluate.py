@@ -11,7 +11,7 @@ from sklearn.metrics import (
     confusion_matrix, ConfusionMatrixDisplay
 )
 
-from constants import DATASET_PATH_PATTERN, MODEL_FILEPATH
+from constants import DATASET_PATH_PATTERN, MODEL_FILEPATH, REPORT_PATH, CM_PATH
 from utils import get_logger, load_params
 
 STAGE_NAME = 'evaluate'
@@ -58,18 +58,16 @@ def evaluate():
 
     logger.info('Генерация артефактов')
     report = classification_report(y_test, y_pred)
-    report_path = "classification_report.txt"
-    with open(report_path, "w") as f:
+    with open(REPORT_PATH, "w") as f:
         f.write(report)
-    mlflow.log_artifact(report_path)
+    mlflow.log_artifact(REPORT_PATH)
 
     cm = confusion_matrix(y_test, y_pred)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm)
     fig, ax = plt.subplots()
     disp.plot(ax=ax)
-    cm_path = "confusion_matrix.png"
-    fig.savefig(cm_path)
-    mlflow.log_artifact(cm_path)
+    fig.savefig(CM_PATH)
+    mlflow.log_artifact(CM_PATH)
 
 
 if __name__ == '__main__':

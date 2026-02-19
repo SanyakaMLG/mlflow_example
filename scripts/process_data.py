@@ -27,7 +27,7 @@ def process_data():
     X, y = df[columns], df[target_column]
     logger.info(f'    Используемые фичи: {columns}')
 
-    mlflow.log_param("features", columns)
+    mlflow.log_param("features", sorted(columns))
 
     all_cat_features = [
         'workclass', 'education', 'marital.status', 'occupation', 'relationship',
